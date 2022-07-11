@@ -27,3 +27,6 @@ How to build:
 
 https://youtu.be/AJQZFHJzwt4
 
+If something doesn't work, try the motors test sketch. It tests all motors, rotation directions and speeds. This helps you understand the problem is in software or in hardware.
+
+
