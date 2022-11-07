@@ -29,4 +29,16 @@ https://youtu.be/AJQZFHJzwt4
 
 If something doesn't work, try the motors test sketch. It tests all motors, rotation directions and speeds. This helps you understand the problem is in software or in hardware.
 
+You can also make this balancing cube with Arduino nano controller. All other parts remain the same.
+
+<img src="/pictures/arduino_schematic.png" alt="Self-Balancing-Cube-Schematic"/>
+
+In this version I make offsets setting procedure more simple. First connect to controller over bluetooth. 
+You will see a message that you need to calibrate the balancing points. Send c+ from serial monitor. This activate calibrating procedure. 
+Set the cube to one of balancing points (edge or vertex). Hold still when the cube does not fall to either side. Send c- from serial monitor. 
+This will write the offsets to the EEPROM. Repeat this procedure four times (3 edges and vertex). After calibrating all offsets, the cube will begin to balance.
+
+This video may also help:
+
+https://youtu.be/Nkm9PoihZOI
 
