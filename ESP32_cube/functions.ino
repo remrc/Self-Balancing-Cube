@@ -6,11 +6,20 @@ void writeTo(byte device, byte address, byte value) {
 }
 
 void beep() {
-  if (!vertical) {
-       digitalWrite(BUZZER, HIGH);
-       delay(70);
-       digitalWrite(BUZZER, LOW);
-    }  
+    digitalWrite(BUZZER, HIGH);
+    delay(70);
+    digitalWrite(BUZZER, LOW);
+    delay(80);
+}
+
+void save() {
+    EEPROM.put(0, offsets);
+    EEPROM.commit();
+    EEPROM.get(0, offsets);
+    if (offsets.ID1 == 99 && offsets.ID2 == 99 && offsets.ID3 == 99 && offsets.ID4 == 99) calibrated = true;
+    calibrating = false;
+    Serial.println("calibrating off");
+    beep();
 }
 
 void angle_setup() {
@@ -28,10 +37,7 @@ void angle_setup() {
   }
   GyZ_offset = GyZ_offset_sum >> 10;
   Serial.print("GyZ offset value = "); Serial.println(GyZ_offset);
-
-  digitalWrite(BUZZER, HIGH);
-  delay(70);
-  digitalWrite(BUZZER, LOW);
+  beep();
   
   for (int i = 0; i < 1024; i++) {
     angle_calc();
@@ -40,10 +46,7 @@ void angle_setup() {
   }
   GyY_offset = GyY_offset_sum >> 10;
   Serial.print("GyY offset value = "); Serial.println(GyY_offset);
-
-  digitalWrite(BUZZER, HIGH);
-  delay(70);
-  digitalWrite(BUZZER, LOW);
+  beep();
   
   for (int i = 0; i < 1024; i++) {
     angle_calc();
@@ -52,14 +55,8 @@ void angle_setup() {
   }
   GyX_offset = GyX_offset_sum >> 10;
   Serial.print("GyX offset value = "); Serial.println(GyX_offset);
-  
-  digitalWrite(BUZZER, HIGH);
-  delay(70);
-  digitalWrite(BUZZER, LOW);
-  delay(80);
-  digitalWrite(BUZZER, HIGH);
-  delay(70);
-  digitalWrite(BUZZER, LOW);
+  beep();
+  beep();
 }
 
 void angle_calc() {
@@ -81,9 +78,6 @@ void angle_calc() {
   AcZ = Wire.read() << 8 | Wire.read(); // 0x3F (ACCEL_ZOUT_H) & 0x40 (ACCEL_ZOUT_L)
 
   // add mpu6050 offset values
-  AcX += AcX_offset;
-  AcY += AcY_offset;  
-  AcZ += AcZ_offset;
   GyZ -= GyZ_offset;
   GyY -= GyY_offset;
   GyX -= GyX_offset;
@@ -96,26 +90,25 @@ void angle_calc() {
   Acc_angleY = -atan2(AcZ, -AcX) * 57.2958;              // angle from acc. values * 57.2958 (deg/rad)
   robot_angleY = robot_angleY * Gyro_amount + Acc_angleY * (1.0 - Gyro_amount);
 
-  //SerialBT.print("AngleX_: "); SerialBT.print(robot_angleX); SerialBT.print(" AngleY_: "); SerialBT.println(robot_angleY); 
-  angleX = robot_angleX - offsetX;
-  angleY = robot_angleY - offsetY;
+  angleX = robot_angleX;
+  angleY = robot_angleY;
   //SerialBT.print("AngleX: "); SerialBT.print(angleX); SerialBT.print(" AngleY: "); SerialBT.println(angleY); 
   
-  if (abs(angleX - offsetX2) < 2 && abs(angleY - offsetY2) < 0.6) {
+  if (abs(angleX - offsets.X2) < 2 && abs(angleY - offsets.Y2) < 0.6) {
     balancing_point = 2;
-    beep();
+    if (!vertical) beep();
     vertical = true;
-  } else if (abs(angleX - offsetX3) < 2 && abs(angleY - offsetY3) < 0.6) {
+  } else if (abs(angleX - offsets.X3) < 2 && abs(angleY - offsets.Y3) < 0.6) {
     balancing_point = 3;
-    beep();
+    if (!vertical) beep();
     vertical = true;
-  } else if (abs(angleX - offsetX4) < 0.6 && abs(angleY - offsetY4) < 2) {
+  } else if (abs(angleX - offsets.X4) < 0.6 && abs(angleY - offsets.Y4) < 2) {
     balancing_point = 4;
-    beep();
+    if (!vertical) beep();
     vertical = true;
-  } else if (abs(angleX) < 0.4 && abs(angleY) < 0.4) {
+  } else if (abs(angleX - offsets.X1) < 0.4 && abs(angleY - offsets.Y1) < 0.4) {
     balancing_point = 1;
-    beep();
+    if (!vertical) beep();
     vertical = true;
   } 
 }
@@ -197,7 +190,45 @@ int Tuning() {
       if (cmd == '+')    K3 += 0.005;
       if (cmd == '-')    K3 -= 0.005;
       printValues();
-      break;  
+      break; 
+    case 'c':
+      if (cmd == '+' && !calibrating) {
+        calibrating = true;
+        SerialBT.println("calibrating on");
+      }
+      if (cmd == '-' && calibrating)  {
+        SerialBT.print("X: "); SerialBT.print(robot_angleX); SerialBT.print(" Y: "); SerialBT.println(robot_angleY);
+        if (abs(robot_angleX) < 10 && abs(robot_angleY) < 10) {
+          offsets.ID1 = 99;
+          offsets.X1 = robot_angleX;
+          offsets.Y1 = robot_angleY;
+          SerialBT.println("Vertex OK.");
+          save();
+        } else if (robot_angleX > -45 && robot_angleX < -25 && robot_angleY > -30 && robot_angleY < -10) {
+          offsets.ID2 = 99;
+          offsets.X2 = robot_angleX;
+          offsets.Y2 = robot_angleY;
+          SerialBT.println("First edge OK.");
+          save();
+        } else if (robot_angleX > 20 && robot_angleX < 40 && robot_angleY > -30 && robot_angleY < -10) {
+          offsets.ID3 = 99;
+          offsets.X3 = robot_angleX;
+          offsets.Y3 = robot_angleY;
+          SerialBT.println("Second edge OK.");
+          save();
+        } else if (abs(robot_angleX) < 15 && robot_angleY > 30 && robot_angleY < 50) {
+          offsets.ID4 = 99;
+          offsets.X4 = robot_angleX;
+          offsets.Y4 = robot_angleY;
+          SerialBT.println("Third edge OK.");
+          save();
+        } else {
+          SerialBT.println("The angles are wrong!!!");
+          beep();
+          beep();
+        }
+      }
+      break;              
    }
 }
 

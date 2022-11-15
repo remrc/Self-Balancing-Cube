@@ -29,9 +29,13 @@
 #define accSens 0             // 0 = 2g, 1 = 4g, 2 = 8g, 3 = 16g
 #define gyroSens 1            // 0 = 250rad/s, 1 = 500rad/s, 2 1000rad/s, 3 = 2000rad/s
 
+#define EEPROM_SIZE 64
+
 float Gyro_amount = 0.1;  
 
 bool vertical = false;
+bool calibrating = false;
+bool calibrated = false;
 int balancing_point = 0;
 
 float K1 = 160;
@@ -39,17 +43,27 @@ float K2 = 10.50;
 float K3 = 0.03;
 int loop_time = 10;
 
-float offsetX = -0.99, offsetY = -3.43;
-float offsetX2 = -31.24, offsetY2 = -19.05;
-float offsetX3 = 30.40, offsetY3 = -19.21;
-float offsetX4 = 0.17, offsetY4 = 35.9;
+struct OffsetsObj {
+  int ID1;
+  float X1;
+  float Y1;
+  int ID2;
+  float X2;
+  float Y2;
+  int ID3;
+  float X3;
+  float Y3;
+  int ID4;
+  float X4;
+  float Y4;
+};
+
+OffsetsObj offsets;
+
 float alpha = 0.74;  
 
 int16_t  AcX, AcY, AcZ, GyX, GyY, GyZ, gyroX, gyroY, gyroZ, gyroYfilt, gyroZfilt;
 
-int16_t  AcX_offset = -940;  
-int16_t  AcY_offset = -200;      
-int16_t  AcZ_offset = 1800;
 int16_t  GyZ_offset = 0;
 int16_t  GyY_offset = 0;
 int16_t  GyX_offset = 0;

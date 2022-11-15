@@ -1,5 +1,6 @@
 #include "ESP32.h"
 #include <Wire.h>
+#include <EEPROM.h>
 #include "BluetoothSerial.h"
 
 BluetoothSerial SerialBT;
@@ -7,6 +8,7 @@ BluetoothSerial SerialBT;
 void setup() {
   Serial.begin(115200);
   SerialBT.begin("ESP32-Cube-blue"); //Bluetooth device name
+  EEPROM.begin(EEPROM_SIZE);
   pinMode(BUZZER, OUTPUT);
   pinMode(BRAKE, OUTPUT);
   digitalWrite(BRAKE, HIGH);
@@ -26,6 +28,10 @@ void setup() {
   ledcAttachPin(PWM3, PWM3_CH);
   Motor3_control(0);
 
+  EEPROM.get(0, offsets);
+  if (offsets.ID1 == 99 && offsets.ID2 == 99 && offsets.ID3 == 99 && offsets.ID4 == 99) calibrated = true;
+    else calibrated = false;
+    
   delay(2000);
   digitalWrite(BUZZER, HIGH);
   delay(70);
@@ -41,18 +47,20 @@ void loop() {
     Tuning();  // derinimui
     angle_calc();
     if (balancing_point == 1) {
+      angleX -= offsets.X1;
+      angleY -= offsets.Y1;
       if (abs(angleX) > 8 || abs(angleY) > 8) vertical = false;
     } else if (balancing_point == 2) {
-      angleX -= offsetX2;
-      angleY -= offsetY2;
+      angleX -= offsets.X2;
+      angleY -= offsets.Y2;
       if (abs(angleY) > 5) vertical = false;
     } else if (balancing_point == 3) {
-      angleX -= offsetX3;
-      angleY -= offsetY3;
+      angleX -= offsets.X3;
+      angleY -= offsets.Y3;
       if (abs(angleY) > 5) vertical = false;
     } else if (balancing_point == 4) {
-      angleX -= offsetX4;
-      angleY -= offsetY4;
+      angleX -= offsets.X4;
+      angleY -= offsets.Y4;
       if (abs(angleX) > 5) vertical = false;
     }
     
@@ -61,7 +69,7 @@ void loop() {
     } else 
       Gyro_amount = 0.1;
 
-    if (vertical) {    
+    if (vertical && calibrated && !calibrating) {    
       digitalWrite(BRAKE, HIGH);
       gyroZ = GyZ / 131.0; // Convert to deg/s
       gyroY = GyY / 131.0; // Convert to deg/s
@@ -93,8 +101,11 @@ void loop() {
     previousT_1 = currentT;
   }
   
-  if (currentT - previousT_2 >= 500) {    
-    battVoltage((double)analogRead(VBAT) / 207); // 300 kubo plokste
+  if (currentT - previousT_2 >= 2000) {    
+    battVoltage((double)analogRead(VBAT) / 207); 
+    if (!calibrated && !calibrating) {
+      SerialBT.println("first you need to calibrate the balancing points...");
+    }
     previousT_2 = currentT;
   }
 }

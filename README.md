@@ -38,7 +38,8 @@ You will see a message that you need to calibrate the balancing points. Send c+ 
 Set the cube to one of balancing points (edge or vertex). Hold still when the cube does not fall to either side. Send c- from serial monitor. 
 This will write the offsets to the EEPROM. Repeat this procedure four times (3 edges and vertex). After calibrating all offsets, the cube will begin to balance.
 
-This video may also help:
+ESP32 version also has an updated balancing point setting procedure. Important! In this video you can learn how to set the balancing points:
 
 https://youtu.be/Nkm9PoihZOI
+
 
