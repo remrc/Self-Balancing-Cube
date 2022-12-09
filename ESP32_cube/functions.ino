@@ -230,7 +230,7 @@ int Tuning() {
       }
       break;              
    }
-...return 0;
+   return 0;
 }
 
 void printValues() {
