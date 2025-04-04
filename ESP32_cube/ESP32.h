@@ -45,17 +45,17 @@ int loop_time = 10;
 
 struct OffsetsObj {
   int ID1;
-  float X1;
-  float Y1;
+   float X1;
+   float Y1;
   int ID2;
-  float X2;
-  float Y2;
+   float X2;
+   float Y2;
   int ID3;
-  float X3;
-  float Y3;
+   float X3;
+   float Y3;
   int ID4;
-  float X4;
-  float Y4;
+   float X4;
+   float Y4;
 };
 
 OffsetsObj offsets;
